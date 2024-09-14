@@ -20,7 +20,9 @@ jobs:
         dotnet-version: '8.x' 
 
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/execute@v3.0.0
+      uses: gittools/actions/gitversion/setup@v3.0.0
+      with:
+        versionSpec: '6.x'
       id: gitversion
 
     - name: Set version variables
