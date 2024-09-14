@@ -5,6 +5,12 @@
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <PackageId>Anto.OrchardCore.Media.Minio</PackageId>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/antosubash/OrchardCore.Minio</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/antosubash/OrchardCore.Minio</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
