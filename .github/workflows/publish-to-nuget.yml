@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - main  
+  
 jobs:
   publish:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./src
 
     steps:
     - name: Checkout code
@@ -26,7 +31,8 @@ jobs:
       id: gitversion
 
     - name: Set version variables
-      run: echo "##[set-output name=VERSION;]${{ steps.gitversion.outputs.semver }}"
+      id: set-version
+      run: echo "VERSION=${{ steps.gitversion.outputs.semver }}" >> $GITHUB_ENV
 
     - name: Display version
       run: echo "Generated version:${{ steps.gitversion.outputs.semver }}"
@@ -38,7 +44,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Pack .NET Project
-      run: dotnet pack src/OrchardCore.Media.Minio --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.gitversion.outputs.semver }}
+      run: dotnet pack ./OrchardCore.Media.Minio --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.gitversion.outputs.semver }}
 
     - name: Publish to NuGet
       run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
