@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchardCore.FileStorage.Minio", "OrchardCore.FileStorage.Minio\OrchardCore.FileStorage.Minio.csproj", "{5E3A3337-000E-458A-B96E-461893F27F63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchardCore.Media.Minio", "OrchardCore.Media.Minio\OrchardCore.Media.Minio.csproj", "{58E886F3-2719-4D8F-AA90-BE7715BA78C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchardCore.Minio.Cms", "OrchardCore.Minio.Cms\OrchardCore.Minio.Cms.csproj", "{DDB808D6-1B87-4997-90D8-080109F46F88}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5E3A3337-000E-458A-B96E-461893F27F63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E3A3337-000E-458A-B96E-461893F27F63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E3A3337-000E-458A-B96E-461893F27F63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E3A3337-000E-458A-B96E-461893F27F63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58E886F3-2719-4D8F-AA90-BE7715BA78C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58E886F3-2719-4D8F-AA90-BE7715BA78C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58E886F3-2719-4D8F-AA90-BE7715BA78C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58E886F3-2719-4D8F-AA90-BE7715BA78C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDB808D6-1B87-4997-90D8-080109F46F88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDB808D6-1B87-4997-90D8-080109F46F88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDB808D6-1B87-4997-90D8-080109F46F88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDB808D6-1B87-4997-90D8-080109F46F88}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
