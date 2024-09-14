@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MimeKit" Version="4.3.0" />
+    <PackageReference Include="MimeKit" Version="4.7.1" />
     <PackageReference Include="Minio" Version="6.0.2" />
     <PackageReference Include="OrchardCore.Abstractions" Version="1.8.3" />
     <PackageReference Include="OrchardCore.FileStorage.Abstractions" Version="1.8.3" />
