@@ -1,4 +1,5 @@
 ﻿using Minio;
+using Minio.ApiEndpoints;
 using Minio.DataModel.Args;
 using Minio.Exceptions;
 using OrchardCore.Modules;
@@ -86,7 +87,7 @@ public class MinioFileStore : IFileStore
             .WithRecursive(includeSubDirectories);
 
 
-        await foreach (var file in _minioClient.ListObjectsAsync(listObjectsArgs).ToAsyncEnumerable())
+        await foreach (var file in _minioClient.ListObjectsEnumAsync(listObjectsArgs))
         {
             if (file.IsDir)
             {
