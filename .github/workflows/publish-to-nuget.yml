@@ -6,6 +6,11 @@ on:
       - main
       - feature/*
       - hotfix/*
+      - release/*
+  
+  pull_request:
+    branches:
+      - "*"
   
 jobs:
   publish:
