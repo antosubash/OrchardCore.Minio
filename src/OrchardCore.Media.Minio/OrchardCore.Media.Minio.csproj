@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OrchardCore.FileStorage.Minio\OrchardCore.FileStorage.Minio.csproj" />
+    <ProjectReference Include="..\OrchardCore.FileStorage.Minio\OrchardCore.FileStorage.Minio.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
