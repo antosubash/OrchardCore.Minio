@@ -3,7 +3,9 @@ name: Publish .NET Class Library to NuGet
 on:
   push:
     branches:
-      - main  
+      - main
+      - feature/*
+      - hotfix/*
   
 jobs:
   publish:
