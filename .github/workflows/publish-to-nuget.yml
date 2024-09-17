@@ -32,10 +32,10 @@ jobs:
 
       - name: Set version variables
         id: set-version
-        run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
+        run: echo "VERSION=${{ steps.tag_version.outputs.new_version }}" >> $GITHUB_ENV
 
       - name: Display version
-        run: echo "Generated version:${{ steps.tag_version.outputs.new_tag }}"
+        run: echo "Generated version:${{ steps.tag_version.outputs.new_version }}"
 
       - name: Restore dependencies
         run: dotnet restore
@@ -44,7 +44,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Pack .NET Project
-        run: dotnet pack ./OrchardCore.Media.Minio --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.tag_version.outputs.new_tag }}
+        run: dotnet pack ./OrchardCore.Media.Minio --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.tag_version.outputs.new_version }}
 
       - name: Publish to NuGet
         run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
