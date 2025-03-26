@@ -7,7 +7,7 @@ public class AdminMenu(IStringLocalizer<AdminMenu> localizer) : INavigationProvi
 {
     private readonly IStringLocalizer _s = localizer;
 
-    public async Task BuildNavigationAsync(string name, NavigationBuilder builder)
+    public ValueTask BuildNavigationAsync(string name, NavigationBuilder builder)
     {
         builder.Add(_s["Configuration"], configuration => configuration
             .Add(_s["Media"], _s["Media"].PrefixPosition(), media => media
@@ -18,6 +18,6 @@ public class AdminMenu(IStringLocalizer<AdminMenu> localizer) : INavigationProvi
                 )
             )
         );
-        await Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

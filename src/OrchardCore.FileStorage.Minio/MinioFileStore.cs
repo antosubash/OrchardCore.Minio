@@ -1,5 +1,5 @@
 ﻿using Minio;
-using Minio.ApiEndpoints;
+using Minio.DataModel;
 using Minio.DataModel.Args;
 using Minio.Exceptions;
 using OrchardCore.Modules;
@@ -15,9 +15,9 @@ public class MinioFileStore : IFileStore
 
     public MinioFileStore(IClock clock, MinioStorageOptions options, IMinioClient minioClient)
     {
-        _clock = clock;
-        _options = options;
-        _minioClient = minioClient;
+        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _minioClient = minioClient ?? throw new ArgumentNullException(nameof(minioClient));
         
         if (string.IsNullOrWhiteSpace(_options.BucketName))
         {
@@ -30,9 +30,13 @@ public class MinioFileStore : IFileStore
         }
     }
     
-    
     public async Task<IFileStoreEntry> GetFileInfoAsync(string path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+
         try
         {
             var statObjectArgs = new StatObjectArgs()
@@ -47,9 +51,13 @@ public class MinioFileStore : IFileStore
                 fileInfo.LastModified
             );
         }
-        catch (MinioException)
+        catch (ObjectNotFoundException)
         {
             return null;
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to get file info for {path}: {ex.Message}", ex);
         }
     }
 
@@ -68,17 +76,21 @@ public class MinioFileStore : IFileStore
             var statObject = await _minioClient.StatObjectAsync(statObjectArgs);
             return new MinioDirectory(path, statObject.LastModified);
         }
-        catch (MinioException)
+        catch (ObjectNotFoundException)
         {
             return null;
         }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to get directory info for {path}: {ex.Message}", ex);
+        }
     }
 
-    public async IAsyncEnumerable<IFileStoreEntry> GetDirectoryContentAsync(string path = null, bool includeSubDirectories = false)
+    public async IAsyncEnumerable<IFileStoreEntry> GetDirectoryContentAsync(string? path = null, bool includeSubDirectories = false)
     {
         if (string.IsNullOrEmpty(path))
         {
-            yield return new MinioDirectory(path, _clock.UtcNow);
+            yield return new MinioDirectory(string.Empty, _clock.UtcNow);
         }
         
         var listObjectsArgs = new ListObjectsArgs()
@@ -86,8 +98,17 @@ public class MinioFileStore : IFileStore
             .WithPrefix(path)
             .WithRecursive(includeSubDirectories);
 
+        IAsyncEnumerable<Item> items;
+        try
+        {
+            items = _minioClient.ListObjectsEnumAsync(listObjectsArgs);
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to list directory contents for {path}: {ex.Message}", ex);
+        }
 
-        await foreach (var file in _minioClient.ListObjectsEnumAsync(listObjectsArgs))
+        await foreach (var file in items)
         {
             if (file.IsDir)
             {
@@ -102,13 +123,19 @@ public class MinioFileStore : IFileStore
 
     public async Task<bool> TryCreateDirectoryAsync(string path)
     {
-        // Minio does not support creating directories, so we create an empty object with the directory name.
-        var pathWithTrailingSlash = path.EndsWith($"/") ? path : path + "/";
-        var tempFile = pathWithTrailingSlash + "temp_file";
-        var stream = new MemoryStream();
-        var writer = new StreamWriter(stream);
-        writer.Write("This is temporary file to create a directory");
-        writer.Flush();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+
+        // Minio does not support creating directories, so we create an empty object with the directory name
+        var pathWithTrailingSlash = path.EndsWith("/", StringComparison.Ordinal) ? path : path + "/";
+        var tempFile = pathWithTrailingSlash + ".directory";
+        
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream);
+        writer.Write(string.Empty); // Create an empty file
+        await writer.FlushAsync();
         stream.Position = 0;
 
         try
@@ -116,19 +143,19 @@ public class MinioFileStore : IFileStore
             await CreateFileFromStreamAsync(tempFile, stream);
             return true;
         }
-        catch (Exception)
+        catch (MinioException ex)
         {
-            return false;
-        }
-        finally
-        {
-            stream.Dispose();
-            writer.Dispose();
+            throw new FileStoreException($"Failed to create directory {path}: {ex.Message}", ex);
         }
     }
 
     public async Task<bool> TryDeleteFileAsync(string path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+
         try
         {
             await _minioClient.RemoveObjectAsync(new RemoveObjectArgs()
@@ -136,60 +163,139 @@ public class MinioFileStore : IFileStore
                 .WithObject(path));
             return true;
         }
-        catch (MinioException)
+        catch (ObjectNotFoundException)
         {
             return false;
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to delete file {path}: {ex.Message}", ex);
         }
     }
 
     public async Task<bool> TryDeleteDirectoryAsync(string path)
     {
-        var removeObjectArgs = new RemoveObjectArgs()
-            .WithBucket(_options.BucketName)
-            .WithObject(path);
-        await _minioClient.RemoveObjectAsync(removeObjectArgs);
-        return true;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+
+        try
+        {
+            var listObjectsArgs = new ListObjectsArgs()
+                .WithBucket(_options.BucketName)
+                .WithPrefix(path);
+
+            await foreach (var item in _minioClient.ListObjectsEnumAsync(listObjectsArgs))
+            {
+                await _minioClient.RemoveObjectAsync(new RemoveObjectArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithObject(item.Key));
+            }
+            return true;
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to delete directory {path}: {ex.Message}", ex);
+        }
     }
 
     public async Task MoveFileAsync(string oldPath, string newPath)
     {
-        await CopyFileAsync(oldPath, newPath);
-        await TryDeleteFileAsync(oldPath);
+        if (string.IsNullOrWhiteSpace(oldPath))
+        {
+            throw new ArgumentException("Old path cannot be null or empty.", nameof(oldPath));
+        }
+        if (string.IsNullOrWhiteSpace(newPath))
+        {
+            throw new ArgumentException("New path cannot be null or empty.", nameof(newPath));
+        }
+
+        try
+        {
+            await CopyFileAsync(oldPath, newPath);
+            await TryDeleteFileAsync(oldPath);
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to move file from {oldPath} to {newPath}: {ex.Message}", ex);
+        }
     }
 
     public async Task CopyFileAsync(string srcPath, string dstPath)
     {
-        await _minioClient.CopyObjectAsync(new CopyObjectArgs()
-            .WithBucket(_options.BucketName)
-            .WithObject(dstPath)
-            .WithCopyObjectSource(new CopySourceObjectArgs()
+        if (string.IsNullOrWhiteSpace(srcPath))
+        {
+            throw new ArgumentException("Source path cannot be null or empty.", nameof(srcPath));
+        }
+        if (string.IsNullOrWhiteSpace(dstPath))
+        {
+            throw new ArgumentException("Destination path cannot be null or empty.", nameof(dstPath));
+        }
+
+        try
+        {
+            await _minioClient.CopyObjectAsync(new CopyObjectArgs()
                 .WithBucket(_options.BucketName)
-                .WithObject(srcPath))
-            );
+                .WithObject(dstPath)
+                .WithCopyObjectSource(new CopySourceObjectArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithObject(srcPath)));
+        }
+        catch (MinioException ex)
+        {
+            throw new FileStoreException($"Failed to copy file from {srcPath} to {dstPath}: {ex.Message}", ex);
+        }
     }
 
     public async Task<Stream> GetFileStreamAsync(string path)
     {
-        var memoryStream = new MemoryStream();
-        await _minioClient.GetObjectAsync(new GetObjectArgs()
-            .WithBucket(_options.BucketName)
-            .WithObject(path)
-            .WithCallbackStream((stream) =>
-            {
-                stream.CopyTo(memoryStream);
-            }));
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
 
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        return memoryStream;
+        var memoryStream = new MemoryStream();
+        try
+        {
+            await _minioClient.GetObjectAsync(new GetObjectArgs()
+                .WithBucket(_options.BucketName)
+                .WithObject(path)
+                .WithCallbackStream((stream) =>
+                {
+                    stream.CopyTo(memoryStream);
+                }));
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            return memoryStream;
+        }
+        catch (MinioException ex)
+        {
+            memoryStream.Dispose();
+            throw new FileStoreException($"Failed to get file stream for {path}: {ex.Message}", ex);
+        }
     }
 
     public async Task<Stream> GetFileStreamAsync(IFileStoreEntry fileStoreEntry)
     {
+        if (fileStoreEntry == null)
+        {
+            throw new ArgumentNullException(nameof(fileStoreEntry));
+        }
         return await GetFileStreamAsync(fileStoreEntry.Path);
     }
 
     public async Task<string> CreateFileFromStreamAsync(string path, Stream inputStream, bool overwrite = false)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+        if (inputStream == null)
+        {
+            throw new ArgumentNullException(nameof(inputStream));
+        }
+
         try
         {
             if (!overwrite)
@@ -197,7 +303,7 @@ public class MinioFileStore : IFileStore
                 var existingFile = await GetFileInfoAsync(path);
                 if (existingFile != null)
                 {
-                    throw new FileStoreException("File already exists and overwrite is not allowed.");
+                    throw new FileStoreException($"File {path} already exists and overwrite is not allowed.");
                 }
             }
 
@@ -209,7 +315,7 @@ public class MinioFileStore : IFileStore
             
             if (response.Size != inputStream.Length)
             {
-                throw new FileStoreException($"Failed to create file {path}: {response.Size}");
+                throw new FileStoreException($"Failed to create file {path}: Uploaded size ({response.Size}) does not match input size ({inputStream.Length})");
             }
 
             return path;

@@ -8,4 +8,6 @@ public class MinioStorageOptions
     public string Endpoint { get; set; }
     public bool Secure { get; set; }
     public bool CreateBucket { get; set; }
+    public bool UseSSL { get; set; }
+    public string BasePath { get; set; }
 }

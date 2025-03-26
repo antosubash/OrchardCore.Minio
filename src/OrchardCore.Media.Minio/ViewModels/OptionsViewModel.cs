@@ -2,9 +2,9 @@
 
 public class OptionsViewModel
 {
-    public string BucketName { get; set; }
+    public required string BucketName { get; set; }
 
-    public string BasePath { get; set; }
+    public required string BasePath { get; set; }
 
     public bool CreateBucket { get; set; }
 }
