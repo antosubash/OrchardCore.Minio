@@ -38,7 +38,8 @@ public class AdminController(
             var model = new OptionsViewModel
             {
                 BucketName = _options.BucketName,
-                CreateBucket = _options.CreateBucket
+                CreateBucket = _options.CreateBucket,
+                BasePath = _options.BasePath
             };
 
             return View(model);
